@@ -21,10 +21,10 @@ ferrox-highs-sys   = { path = "crates/highs-sys",   version = "0.3.12" }
 ferrox             = { path = "crates/ferrox",       version = "0.3.12" }
 
 # converge — path deps during development
-converge-pack  = { path = "../converge/crates/pack",         version = "3.7.1" }
-converge-model = { path = "../converge/crates/model",        version = "3.7.1" }
-converge-core  = { path = "../converge/crates/core",         version = "3.7.1" }
-converge-provider-api = { path = "../converge/crates/provider-api", version = "3.7.1" }
+converge-pack  = { path = "../converge/crates/pack",         version = "3.7.2" }
+converge-model = { path = "../converge/crates/model",        version = "3.7.2" }
+converge-core  = { path = "../converge/crates/core",         version = "3.7.2" }
+converge-provider-api = { path = "../converge/crates/provider-api", version = "3.7.2" }
 
 # shared
 async-trait = "0.1"
