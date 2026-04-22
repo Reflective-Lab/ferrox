@@ -258,24 +258,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
-name = "ferrox"
-version = "0.3.12"
-dependencies = [
- "async-trait",
- "converge-core",
- "converge-model",
- "converge-pack",
- "converge-provider-api",
- "ferrox-highs-sys",
- "ferrox-ortools-sys",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "ferrox-highs-sys"
 version = "0.3.12"
 dependencies = [
@@ -294,15 +276,33 @@ name = "ferrox-server"
 version = "0.3.12"
 dependencies = [
  "anyhow",
- "ferrox",
  "ferrox-highs-sys",
  "ferrox-ortools-sys",
+ "ferrox-solver",
  "prost",
  "tokio",
  "tonic",
  "tonic-build",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "ferrox-solver"
+version = "0.3.12"
+dependencies = [
+ "async-trait",
+ "converge-core",
+ "converge-model",
+ "converge-pack",
+ "converge-provider-api",
+ "ferrox-highs-sys",
+ "ferrox-ortools-sys",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

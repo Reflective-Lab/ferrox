@@ -18,7 +18,7 @@ repository = "https://github.com/Reflective-Lab/ferrox"
 # ferrox-internal
 ferrox-ortools-sys = { path = "crates/ortools-sys", version = "0.3.12" }
 ferrox-highs-sys   = { path = "crates/highs-sys",   version = "0.3.12" }
-ferrox             = { path = "crates/ferrox",       version = "0.3.12" }
+ferrox             = { path = "crates/ferrox",       package = "ferrox-solver", version = "0.3.12" }
 
 # converge — path deps during development
 converge-pack  = { path = "../converge/crates/pack",         version = "3.7.2" }

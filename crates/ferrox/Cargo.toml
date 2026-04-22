@@ -1,5 +1,5 @@
 [package]
-name = "ferrox"
+name = "ferrox-solver"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,6 +8,9 @@ repository.workspace = true
 description = "Iron-forged OR-Tools and HiGHS solvers as Converge Suggestors"
 keywords    = ["optimization", "solver", "scheduling", "routing", "cp-sat"]
 categories  = ["algorithms", "science"]
+
+[lib]
+name = "ferrox"
 
 [features]
 default  = []
