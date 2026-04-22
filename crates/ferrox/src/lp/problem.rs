@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LpVariable {
     pub name: String,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub lb: f64,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub ub: f64,
 }
 
@@ -17,7 +19,9 @@ pub struct LpTerm {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LpConstraint {
     pub name: String,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub lb: f64,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub ub: f64,
     pub terms: Vec<LpTerm>,
 }
@@ -45,5 +49,5 @@ pub struct LpPlan {
     pub status: String,
     pub values: Vec<(String, f64)>,
     pub objective_value: f64,
-    pub solver: &'static str,
+    pub solver: String,
 }

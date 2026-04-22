@@ -2,12 +2,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum VarKind { Continuous, Integer, Binary }
+pub enum VarKind {
+    Continuous,
+    Integer,
+    Binary,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MipVariable {
     pub name: String,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub lb: f64,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub ub: f64,
     pub kind: VarKind,
 }
@@ -21,7 +27,9 @@ pub struct MipTerm {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MipConstraint {
     pub name: String,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub lb: f64,
+    #[serde(with = "crate::serde_util::f64_inf")]
     pub ub: f64,
     pub terms: Vec<MipTerm>,
 }
@@ -51,5 +59,5 @@ pub struct MipPlan {
     pub values: Vec<(String, f64)>,
     pub objective_value: f64,
     pub mip_gap: f64,
-    pub solver: &'static str,
+    pub solver: String,
 }

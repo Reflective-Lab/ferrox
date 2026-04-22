@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use converge_pack::{AgentEffect, Context, ContextKey, ProposedFact, Suggestor};
-use ferrox_ortools_sys::safe::LinearSolver;
 use ferrox_ortools_sys::OrtoolsStatus;
+use ferrox_ortools_sys::safe::LinearSolver;
 use std::collections::HashMap;
 use tracing::warn;
 
@@ -14,7 +14,7 @@ pub struct GlopLpSuggestor;
 
 #[async_trait]
 impl Suggestor for GlopLpSuggestor {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "GlopLpSuggestor"
     }
 
@@ -27,15 +27,19 @@ impl Suggestor for GlopLpSuggestor {
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {
-        ctx.get(ContextKey::Seeds).iter().any(|f| {
-            f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id))
-        })
+        ctx.get(ContextKey::Seeds)
+            .iter()
+            .any(|f| f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id)))
     }
 
     async fn execute(&self, ctx: &dyn Context) -> AgentEffect {
         let mut proposals = Vec::new();
 
-        for fact in ctx.get(ContextKey::Seeds).iter().filter(|f| f.id.starts_with(REQUEST_PREFIX)) {
+        for fact in ctx
+            .get(ContextKey::Seeds)
+            .iter()
+            .filter(|f| f.id.starts_with(REQUEST_PREFIX))
+        {
             let rid = request_id(&fact.id);
             if plan_exists(ctx, rid) {
                 continue;
@@ -45,9 +49,9 @@ impl Suggestor for GlopLpSuggestor {
                 Ok(req) => {
                     let plan = solve_lp(&req);
                     let confidence = match plan.status.as_str() {
-                        "optimal"  => 1.0,
+                        "optimal" => 1.0,
                         "feasible" => 0.7,
-                        _          => 0.0,
+                        _ => 0.0,
                     };
                     proposals.push(
                         ProposedFact::new(
@@ -79,10 +83,12 @@ fn request_id(fact_id: &str) -> &str {
 
 fn plan_exists(ctx: &dyn Context, request_id: &str) -> bool {
     let plan_id = format!("{PLAN_PREFIX}{request_id}");
-    ctx.get(ContextKey::Strategies).iter().any(|f| f.id == plan_id)
+    ctx.get(ContextKey::Strategies)
+        .iter()
+        .any(|f| f.id == plan_id)
 }
 
-fn solve_lp(req: &LpRequest) -> LpPlan {
+pub fn solve_lp(req: &LpRequest) -> LpPlan {
     let mut solver = LinearSolver::new_glop(&req.id);
     let mut name_to_idx: HashMap<String, i32> = HashMap::new();
 
@@ -113,15 +119,21 @@ fn solve_lp(req: &LpRequest) -> LpPlan {
     }
 
     let status = match solver.solve() {
-        OrtoolsStatus::Optimal   => "optimal",
-        OrtoolsStatus::Feasible  => "feasible",
+        OrtoolsStatus::Optimal => "optimal",
+        OrtoolsStatus::Feasible => "feasible",
         OrtoolsStatus::Infeasible => "infeasible",
-        OrtoolsStatus::Unbounded  => "unbounded",
-        _                         => "error",
+        OrtoolsStatus::Unbounded => "unbounded",
+        _ => "error",
     };
 
-    let values: Vec<(String, f64)> = req.variables.iter()
-        .filter_map(|v| name_to_idx.get(&v.name).map(|&vi| (v.name.clone(), solver.var_value(vi))))
+    let values: Vec<(String, f64)> = req
+        .variables
+        .iter()
+        .filter_map(|v| {
+            name_to_idx
+                .get(&v.name)
+                .map(|&vi| (v.name.clone(), solver.var_value(vi)))
+        })
         .collect();
 
     let objective_value = if matches!(status, "optimal" | "feasible") {
@@ -135,6 +147,6 @@ fn solve_lp(req: &LpRequest) -> LpPlan {
         status: status.to_string(),
         values,
         objective_value,
-        solver: "glop-v9.15",
+        solver: "glop-v9.15".to_string(),
     }
 }

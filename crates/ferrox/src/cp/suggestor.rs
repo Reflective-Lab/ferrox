@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use converge_pack::{AgentEffect, Context, ContextKey, ProposedFact, Suggestor};
-use ferrox_ortools_sys::safe::CpModel;
 use ferrox_ortools_sys::OrtoolsStatus;
+use ferrox_ortools_sys::safe::CpModel;
 use std::collections::HashMap;
 use tracing::warn;
 
-use super::problem::{CpSatPlan, CpSatRequest, ConstraintKind};
+use super::problem::{ConstraintKind, CpSatPlan, CpSatRequest};
 
 const REQUEST_PREFIX: &str = "cpsat-request:";
 const PLAN_PREFIX: &str = "cpsat-plan:";
@@ -14,7 +14,7 @@ pub struct CpSatSuggestor;
 
 #[async_trait]
 impl Suggestor for CpSatSuggestor {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "CpSatSuggestor"
     }
 
@@ -27,15 +27,19 @@ impl Suggestor for CpSatSuggestor {
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {
-        ctx.get(ContextKey::Seeds).iter().any(|f| {
-            f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id))
-        })
+        ctx.get(ContextKey::Seeds)
+            .iter()
+            .any(|f| f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id)))
     }
 
     async fn execute(&self, ctx: &dyn Context) -> AgentEffect {
         let mut proposals = Vec::new();
 
-        for fact in ctx.get(ContextKey::Seeds).iter().filter(|f| f.id.starts_with(REQUEST_PREFIX)) {
+        for fact in ctx
+            .get(ContextKey::Seeds)
+            .iter()
+            .filter(|f| f.id.starts_with(REQUEST_PREFIX))
+        {
             let rid = request_id(&fact.id);
             if plan_exists(ctx, rid) {
                 continue;
@@ -45,9 +49,9 @@ impl Suggestor for CpSatSuggestor {
                 Ok(req) => {
                     let plan = solve_cp(&req);
                     let confidence = match plan.status.as_str() {
-                        "optimal"  => 1.0,
+                        "optimal" => 1.0,
                         "feasible" => 0.7,
-                        _          => 0.0,
+                        _ => 0.0,
                     };
                     proposals.push(
                         ProposedFact::new(
@@ -79,16 +83,55 @@ fn request_id(fact_id: &str) -> &str {
 
 fn plan_exists(ctx: &dyn Context, request_id: &str) -> bool {
     let plan_id = format!("{PLAN_PREFIX}{request_id}");
-    ctx.get(ContextKey::Strategies).iter().any(|f| f.id == plan_id)
+    ctx.get(ContextKey::Strategies)
+        .iter()
+        .any(|f| f.id == plan_id)
 }
 
-fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
+#[allow(clippy::too_many_lines)]
+pub fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
     let mut model = CpModel::new();
     let mut name_to_idx: HashMap<String, i32> = HashMap::new();
+    let mut bool_name_to_idx: HashMap<String, i32> = HashMap::new();
+    let mut interval_name_to_idx: HashMap<String, i32> = HashMap::new();
 
     for var in &req.variables {
-        let idx = model.new_int_var(var.lb, var.ub, &var.name);
+        let idx = if var.is_bool {
+            let i = model.new_bool_var(&var.name);
+            bool_name_to_idx.insert(var.name.clone(), i);
+            i
+        } else {
+            model.new_int_var(var.lb, var.ub, &var.name)
+        };
         name_to_idx.insert(var.name.clone(), idx);
+    }
+
+    for ivd in &req.interval_vars {
+        if let (Some(&s), Some(&e)) =
+            (name_to_idx.get(&ivd.start_var), name_to_idx.get(&ivd.end_var))
+        {
+            let idx = model.new_fixed_interval_var(s, ivd.duration, e, &ivd.name);
+            interval_name_to_idx.insert(ivd.name.clone(), idx);
+        } else {
+            warn!(name = %ivd.name, "interval_var references unknown start/end variable");
+        }
+    }
+
+    for ovd in &req.optional_interval_vars {
+        match (
+            name_to_idx.get(&ovd.start_var),
+            name_to_idx.get(&ovd.end_var),
+            bool_name_to_idx.get(&ovd.lit_var),
+        ) {
+            (Some(&s), Some(&e), Some(&lit)) => {
+                let idx =
+                    model.new_optional_interval_var(s, ovd.duration, e, lit, &ovd.name);
+                interval_name_to_idx.insert(ovd.name.clone(), idx);
+            }
+            _ => {
+                warn!(name = %ovd.name, "optional_interval_var references unknown variable(s)");
+            }
+        }
     }
 
     for constraint in &req.constraints {
@@ -106,10 +149,18 @@ fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
                 model.add_linear_eq(&vars, &coeffs, *rhs);
             }
             ConstraintKind::AllDifferent { vars } => {
-                let idxs: Vec<i32> = vars.iter()
+                let idxs: Vec<i32> = vars
+                    .iter()
                     .filter_map(|v| name_to_idx.get(v).copied())
                     .collect();
                 model.add_all_different(&idxs);
+            }
+            ConstraintKind::NoOverlap { intervals } => {
+                let idxs: Vec<i32> = intervals
+                    .iter()
+                    .filter_map(|n| interval_name_to_idx.get(n).copied())
+                    .collect();
+                model.add_no_overlap(&idxs);
             }
         }
     }
@@ -127,16 +178,21 @@ fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
     let solution = model.solve(time_limit);
 
     let status = match solution.status() {
-        OrtoolsStatus::Optimal   => "optimal",
-        OrtoolsStatus::Feasible  => "feasible",
+        OrtoolsStatus::Optimal => "optimal",
+        OrtoolsStatus::Feasible => "feasible",
         OrtoolsStatus::Infeasible => "infeasible",
-        OrtoolsStatus::Unbounded  => "unbounded",
-        _                         => "error",
+        OrtoolsStatus::Unbounded => "unbounded",
+        _ => "error",
     };
 
     let assignments = if solution.status().is_success() {
-        req.variables.iter()
-            .filter_map(|v| name_to_idx.get(&v.name).map(|&idx| (v.name.clone(), solution.value(idx))))
+        req.variables
+            .iter()
+            .filter_map(|v| {
+                name_to_idx
+                    .get(&v.name)
+                    .map(|&idx| (v.name.clone(), solution.value(idx)))
+            })
             .collect()
     } else {
         vec![]
@@ -154,7 +210,7 @@ fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
         assignments,
         objective_value,
         wall_time_seconds: solution.wall_time(),
-        solver: "cp-sat-v9.15",
+        solver: "cp-sat-v9.15".to_string(),
     }
 }
 
@@ -162,7 +218,8 @@ fn terms_to_vecs(
     terms: &[crate::cp::problem::CpTerm],
     name_to_idx: &HashMap<String, i32>,
 ) -> (Vec<i32>, Vec<i64>) {
-    terms.iter()
+    terms
+        .iter()
         .filter_map(|t| name_to_idx.get(&t.var).map(|&idx| (idx, t.coeff)))
         .unzip()
 }

@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package ferrox.v1;
+
+option java_package = "zone.ferrox.v1";
+option go_package   = "github.com/reflective-lab/ferrox/ferroxv1";
+
+// ─── Shared ──────────────────────────────────────────────────────────────────
+
+message StringF64 {
+  string name  = 1;
+  double value = 2;
+}
+
+message StringI64 {
+  string name  = 1;
+  int64  value = 2;
+}
+
+// ─── CP-SAT ──────────────────────────────────────────────────────────────────
+
+message CpVariable {
+  string name = 1;
+  int64  lb   = 2;
+  int64  ub   = 3;
+}
+
+message CpTerm {
+  string var   = 1;
+  int64  coeff = 2;
+}
+
+message CpLinear {
+  repeated CpTerm terms = 1;
+  int64           rhs   = 2;
+}
+
+message CpAllDifferent {
+  repeated string vars = 1;
+}
+
+message CpConstraint {
+  oneof kind {
+    CpLinear       linear_le     = 1;
+    CpLinear       linear_ge     = 2;
+    CpLinear       linear_eq     = 3;
+    CpAllDifferent all_different = 4;
+  }
+}
+
+message SolveCpRequest {
+  string               id                 = 1;
+  repeated CpVariable  variables          = 2;
+  repeated CpConstraint constraints       = 3;
+  repeated CpTerm      objective_terms    = 4;
+  bool                 minimize           = 5;
+  optional double      time_limit_seconds = 6;
+}
+
+message SolveCpResponse {
+  string             request_id        = 1;
+  string             status            = 2;
+  repeated StringI64 assignments       = 3;
+  optional int64     objective_value   = 4;
+  double             wall_time_seconds = 5;
+  string             solver            = 6;
+}
+
+// ─── LP (GLOP) ───────────────────────────────────────────────────────────────
+
+message LpVariable {
+  string name = 1;
+  double lb   = 2;
+  double ub   = 3;
+}
+
+message LpTerm {
+  string var   = 1;
+  double coeff = 2;
+}
+
+message LpConstraint {
+  string          name  = 1;
+  double          lb    = 2;
+  double          ub    = 3;
+  repeated LpTerm terms = 4;
+}
+
+message LpObjective {
+  repeated LpTerm terms    = 1;
+  bool            maximize = 2;
+}
+
+message SolveLpRequest {
+  string              id                 = 1;
+  repeated LpVariable variables          = 2;
+  repeated LpConstraint constraints      = 3;
+  LpObjective         objective          = 4;
+  optional double     time_limit_seconds = 5;
+}
+
+message SolveLpResponse {
+  string             request_id      = 1;
+  string             status          = 2;
+  repeated StringF64 values          = 3;
+  double             objective_value = 4;
+  string             solver          = 5;
+}
+
+// ─── MIP (HiGHS) ─────────────────────────────────────────────────────────────
+
+enum VarKind {
+  CONTINUOUS = 0;
+  INTEGER    = 1;
+  BINARY     = 2;
+}
+
+message MipVariable {
+  string  name = 1;
+  double  lb   = 2;
+  double  ub   = 3;
+  VarKind kind = 4;
+}
+
+message MipTerm {
+  string var   = 1;
+  double coeff = 2;
+}
+
+message MipConstraint {
+  string           name  = 1;
+  double           lb    = 2;
+  double           ub    = 3;
+  repeated MipTerm terms = 4;
+}
+
+message MipObjective {
+  repeated MipTerm terms    = 1;
+  bool             maximize = 2;
+}
+
+message SolveMipRequest {
+  string               id                  = 1;
+  repeated MipVariable variables           = 2;
+  repeated MipConstraint constraints       = 3;
+  MipObjective         objective           = 4;
+  optional double      time_limit_seconds  = 5;
+  optional double      mip_gap_tolerance   = 6;
+}
+
+message SolveMipResponse {
+  string             request_id      = 1;
+  string             status          = 2;
+  repeated StringF64 values          = 3;
+  double             objective_value = 4;
+  double             mip_gap         = 5;
+  string             solver          = 6;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+service FerroxSolver {
+  rpc SolveCp  (SolveCpRequest)  returns (SolveCpResponse);
+  rpc SolveLp  (SolveLpRequest)  returns (SolveLpResponse);
+  rpc SolveMip (SolveMipRequest) returns (SolveMipResponse);
+}

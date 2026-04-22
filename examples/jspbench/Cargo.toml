@@ -1,0 +1,17 @@
+[workspace]
+
+[package]
+name = "jspbench"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "jspbench"
+path = "src/main.rs"
+
+[dependencies]
+ferrox        = { path = "../../crates/ferrox", features = ["ortools"] }
+converge-core = { path = "../../../converge/crates/core", version = "3.7.1" }
+converge-pack = { path = "../../../converge/crates/pack", version = "3.7.1" }
+serde_json    = "1"
+tokio         = { version = "1", features = ["macros", "rt-multi-thread"] }

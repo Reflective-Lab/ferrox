@@ -15,25 +15,22 @@ fn build_with_highs() {
     let workspace_root = manifest_dir.parent().unwrap().parent().unwrap();
 
     let highs_build = env::var("FERROX_HIGHS_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| workspace_root.join("vendor/highs/build"));
+        .map_or_else(|_| workspace_root.join("vendor/highs/build"), PathBuf::from);
 
     let highs_src = highs_build.parent().unwrap().to_path_buf();
 
-    if !highs_build.exists() {
-        panic!(
-            "HiGHS build not found at {:?}.\n\
-             Run `make highs` from the ferrox workspace root, or set FERROX_HIGHS_ROOT.",
-            highs_build
-        );
-    }
+    assert!(
+        highs_build.exists(),
+        "HiGHS build not found at {}.\nRun `make highs` from the ferrox workspace root, or set FERROX_HIGHS_ROOT.",
+        highs_build.display()
+    );
 
     cc::Build::new()
         .cpp(true)
         .std("c++17")
         .file("highs_wrapper.cc")
         .include(highs_src.join("src"))
-        .include(highs_build.join("generated"))
+        .include(&highs_build)
         .flag_if_supported("-Wno-unused-parameter")
         .flag_if_supported("-Wno-deprecated-declarations")
         .compile("highs_wrapper");
@@ -42,6 +39,7 @@ fn build_with_highs() {
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!("cargo:LIB_DIR={}", lib_dir.display());
     println!("cargo:rustc-link-lib=dylib=highs");
+    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
 
     #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-lib=c++");

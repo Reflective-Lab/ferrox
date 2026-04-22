@@ -1,7 +1,16 @@
-#include "wrapper.h"
+// Intentionally does NOT include wrapper.h — the C typedef for CpModelBuilder
+// would collide with operations_research::sat::CpModelBuilder from cp_model.h.
+// The extern "C" block here redeclares all exported functions with their
+// concrete struct types.
+//
+// IntVar(int, CpModelBuilder*) is private in v9.15, so we cannot reconstruct
+// vars from indices alone. Instead the storage struct caches every IntVar/BoolVar
+// (as IntVar) keyed by its proto index so make_var() can look them up.
 
 #include <cstring>
 #include <memory>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "ortools/sat/cp_model.h"
@@ -9,20 +18,46 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-using namespace operations_research;
-using namespace operations_research::sat;
+// ── Internal storage types ────────────────────────────────────────────────────
 
-// ── CP-SAT ────────────────────────────────────────────────────────────────────
-
-// We store the CpModelBuilder as an opaque heap object.
-// The C ABI uses a forward-declared struct tag; the real type lives here.
 struct CpModelBuilder {
-    sat::CpModelBuilder builder;
+    operations_research::sat::CpModelBuilder builder;
+    // Every variable (int or bool) stored as IntVar, keyed by proto index.
+    std::unordered_map<int32_t, operations_research::sat::IntVar> vars;
+    // Bool vars kept separately so NewOptionalIntervalVar can receive a BoolVar.
+    std::unordered_map<int32_t, operations_research::sat::BoolVar> bools;
+    // Interval vars keyed by their proto index.
+    std::unordered_map<int32_t, operations_research::sat::IntervalVar> intervals;
 };
 
 struct CpSolverResponse {
-    sat::CpSolverResponse response;
+    operations_research::sat::CpSolverResponse response;
 };
+
+struct MpSolver {
+    std::unique_ptr<operations_research::MPSolver> solver;
+    std::vector<operations_research::MPVariable*>   vars;
+    std::vector<operations_research::MPConstraint*> constraints;
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+static operations_research::sat::IntVar make_var(int32_t idx, const CpModelBuilder* m) {
+    return m->vars.at(idx);
+}
+
+static operations_research::sat::LinearExpr make_expr(
+    const CpModelBuilder* m, const int32_t* idx, const int64_t* c, size_t n)
+{
+    std::vector<operations_research::sat::IntVar> vars;
+    std::vector<int64_t> coeffs(c, c + n);
+    vars.reserve(n);
+    for (size_t i = 0; i < n; ++i)
+        vars.push_back(make_var(idx[i], m));
+    return operations_research::sat::LinearExpr::WeightedSum(vars, coeffs);
+}
+
+// ── CP-SAT extern "C" ─────────────────────────────────────────────────────────
 
 extern "C" {
 
@@ -35,74 +70,86 @@ void cpmodel_free(CpModelBuilder* m) {
 }
 
 int32_t cpmodel_new_int_var(CpModelBuilder* m, int64_t lb, int64_t ub, const char* name) {
-    auto v = m->builder.NewIntVar(Domain(lb, ub));
+    auto v = m->builder.NewIntVar(operations_research::Domain(lb, ub));
     if (name && name[0]) v = v.WithName(name);
-    return v.index();
+    int32_t idx = v.index();
+    m->vars[idx] = v;
+    return idx;
 }
 
 int32_t cpmodel_new_bool_var(CpModelBuilder* m, const char* name) {
-    auto v = m->builder.NewBoolVar();
-    if (name && name[0]) v = v.WithName(name);
-    return v.index();
-}
-
-static LinearExpr make_expr(const int32_t* idx, const int64_t* c, size_t n) {
-    LinearExpr expr;
-    for (size_t i = 0; i < n; ++i)
-        expr += LinearExpr::Term(IntVar(idx[i]), c[i]);
-    return expr;
+    auto bv = m->builder.NewBoolVar();
+    if (name && name[0]) bv = bv.WithName(name);
+    int32_t idx = bv.index();
+    // BoolVar is implicitly convertible to IntVar (takes value 0 or 1)
+    m->vars[idx] = operations_research::sat::IntVar(bv);
+    // Also store as BoolVar for optional interval creation.
+    m->bools[idx] = bv;
+    return idx;
 }
 
 void cpmodel_add_linear_le(CpModelBuilder* m, const int32_t* idx,
                             const int64_t* c, size_t n, int64_t rhs) {
-    m->builder.AddLessOrEqual(make_expr(idx, c, n), rhs);
+    m->builder.AddLessOrEqual(make_expr(m, idx, c, n), rhs);
 }
 
 void cpmodel_add_linear_ge(CpModelBuilder* m, const int32_t* idx,
                             const int64_t* c, size_t n, int64_t rhs) {
-    m->builder.AddGreaterOrEqual(make_expr(idx, c, n), rhs);
+    m->builder.AddGreaterOrEqual(make_expr(m, idx, c, n), rhs);
 }
 
 void cpmodel_add_linear_eq(CpModelBuilder* m, const int32_t* idx,
                             const int64_t* c, size_t n, int64_t rhs) {
-    m->builder.AddEquality(make_expr(idx, c, n), rhs);
+    m->builder.AddEquality(make_expr(m, idx, c, n), rhs);
 }
 
 void cpmodel_add_all_different(CpModelBuilder* m, const int32_t* idx, size_t n) {
-    std::vector<IntVar> vars;
+    std::vector<operations_research::sat::IntVar> vars;
     vars.reserve(n);
-    for (size_t i = 0; i < n; ++i) vars.push_back(IntVar(idx[i]));
+    for (size_t i = 0; i < n; ++i)
+        vars.push_back(make_var(idx[i], m));
     m->builder.AddAllDifferent(vars);
 }
 
 void cpmodel_minimize(CpModelBuilder* m, const int32_t* idx, const int64_t* c, size_t n) {
-    m->builder.Minimize(make_expr(idx, c, n));
+    m->builder.Minimize(make_expr(m, idx, c, n));
 }
 
 void cpmodel_maximize(CpModelBuilder* m, const int32_t* idx, const int64_t* c, size_t n) {
-    m->builder.Maximize(make_expr(idx, c, n));
+    m->builder.Maximize(make_expr(m, idx, c, n));
 }
 
 CpSolverResponse* cpmodel_solve(CpModelBuilder* m, double time_limit) {
-    SatParameters params;
+    operations_research::sat::SatParameters params;
     if (time_limit > 0.0) params.set_max_time_in_seconds(time_limit);
-    params.set_num_search_workers(1);
-
+    // Use all available hardware threads for large-neighbourhood search.
+    params.set_num_search_workers(std::max(1u, std::thread::hardware_concurrency()));
     auto* r = new CpSolverResponse{};
-    r->response = SolveWithParameters(m->builder.Build(), params);
+    r->response = operations_research::sat::SolveWithParameters(m->builder.Build(), params);
     return r;
 }
 
-OrtoolsStatus cpresponse_status(const CpSolverResponse* r) {
-    return static_cast<OrtoolsStatus>(r->response.status());
+// Status enum values must match OrtoolsStatus in lib.rs:
+//   Unknown=0, Optimal=1, Feasible=2, Infeasible=3, Unbounded=4, ModelInvalid=5, Error=6
+// CP-SAT proto uses different values (OPTIMAL=4, FEASIBLE=2, etc.), so we map here.
+int32_t cpresponse_status(const CpSolverResponse* r) {
+    using S = operations_research::sat::CpSolverStatus;
+    switch (r->response.status()) {
+        case S::OPTIMAL:        return 1;
+        case S::FEASIBLE:       return 2;
+        case S::INFEASIBLE:     return 3;
+        case S::MODEL_INVALID:  return 5;
+        default:                return 0; // UNKNOWN
+    }
 }
 
 int64_t cpresponse_objective_value(const CpSolverResponse* r) {
     return static_cast<int64_t>(r->response.objective_value());
 }
 
+// Direct proto access — no need to reconstruct IntVar to read a value.
 int64_t cpresponse_value(const CpSolverResponse* r, int32_t var_index) {
-    return SolutionIntegerValue(r->response, IntVar(var_index));
+    return r->response.solution(var_index);
 }
 
 double cpresponse_wall_time(const CpSolverResponse* r) {
@@ -113,17 +160,59 @@ void cpresponse_free(CpSolverResponse* r) {
     delete r;
 }
 
+// ── Interval vars + NoOverlap ────────────────────────────────────────────────
+
+// Fixed-duration interval: solver enforces end == start + size.
+int32_t cpmodel_new_interval_var(CpModelBuilder* m, int32_t start_idx,
+                                  int64_t size, int32_t end_idx,
+                                  const char* /*name*/) {
+    auto start = make_var(start_idx, m);
+    auto end   = make_var(end_idx,   m);
+    auto iv = m->builder.NewIntervalVar(start, size, end);
+    int32_t idx = iv.index();
+    m->intervals[idx] = iv;
+    return idx;
+}
+
+// Optional interval: active only when `bool_idx` variable is 1.
+int32_t cpmodel_new_optional_interval_var(CpModelBuilder* m, int32_t start_idx,
+                                           int64_t size, int32_t end_idx,
+                                           int32_t bool_idx, const char* /*name*/) {
+    auto start = make_var(start_idx, m);
+    auto end   = make_var(end_idx,   m);
+    auto lit   = m->bools.at(bool_idx);
+    auto iv = m->builder.NewOptionalIntervalVar(start, size, end, lit);
+    int32_t idx = iv.index();
+    m->intervals[idx] = iv;
+    return idx;
+}
+
+// Circuit (Hamiltonian): exactly the arcs whose literal is 1 form a circuit
+// covering all visited nodes.  Pass self-loop arcs (tail == head) to make a
+// node optional — if its self-loop literal is 1 the node is skipped.
+void cpmodel_add_circuit(CpModelBuilder* m,
+                          const int32_t* tails, const int32_t* heads,
+                          const int32_t* lits, size_t n) {
+    auto circuit = m->builder.AddCircuitConstraint();
+    for (size_t i = 0; i < n; ++i)
+        circuit.AddArc(tails[i], heads[i], m->bools.at(lits[i]));
+}
+
+// NoOverlap: no two of the listed intervals may overlap in time.
+void cpmodel_add_no_overlap(CpModelBuilder* m, const int32_t* idx, size_t n) {
+    std::vector<operations_research::sat::IntervalVar> ivs;
+    ivs.reserve(n);
+    for (size_t i = 0; i < n; ++i)
+        ivs.push_back(m->intervals.at(idx[i]));
+    m->builder.AddNoOverlap(ivs);
+}
+
 // ── GLOP ──────────────────────────────────────────────────────────────────────
 
-struct MpSolver {
-    std::unique_ptr<MPSolver> solver;
-    std::vector<MPVariable*>   vars;
-    std::vector<MPConstraint*> constraints;
-};
-
-MpSolver* mpsolver_new(const char* name, LpSolverType /*type*/) {
+// LP_GLOP = 0, matching LpSolverType in lib.rs
+MpSolver* mpsolver_new(const char* /*name*/, int /*type*/) {
     auto* s = new MpSolver{};
-    s->solver = std::unique_ptr<MPSolver>(MPSolver::CreateSolver("GLOP"));
+    s->solver.reset(operations_research::MPSolver::CreateSolver("GLOP"));
     if (!s->solver) { delete s; return nullptr; }
     return s;
 }
@@ -169,14 +258,14 @@ void mpsolver_set_objective_coeff(MpSolver* s, int32_t vi, double coeff) {
 void mpsolver_minimize(MpSolver* s) { s->solver->MutableObjective()->SetMinimization(); }
 void mpsolver_maximize(MpSolver* s) { s->solver->MutableObjective()->SetMaximization(); }
 
-OrtoolsStatus mpsolver_solve(MpSolver* s) {
-    auto result = s->solver->Solve();
-    switch (result) {
-        case MPSolver::OPTIMAL:    return ORTOOLS_OPTIMAL;
-        case MPSolver::FEASIBLE:   return ORTOOLS_FEASIBLE;
-        case MPSolver::INFEASIBLE: return ORTOOLS_INFEASIBLE;
-        case MPSolver::UNBOUNDED:  return ORTOOLS_UNBOUNDED;
-        default:                   return ORTOOLS_ERROR;
+int32_t mpsolver_solve(MpSolver* s) {
+    // Return values match OrtoolsStatus: Optimal=1, Feasible=2, Infeasible=3, ...
+    switch (s->solver->Solve()) {
+        case operations_research::MPSolver::OPTIMAL:    return 1;
+        case operations_research::MPSolver::FEASIBLE:   return 2;
+        case operations_research::MPSolver::INFEASIBLE: return 3;
+        case operations_research::MPSolver::UNBOUNDED:  return 4;
+        default:                                        return 6; // Error
     }
 }
 

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use converge_pack::{AgentEffect, Context, ContextKey, ProposedFact, Suggestor};
-use ferrox_highs_sys::safe::HighsSolver;
 use ferrox_highs_sys::HighsModelStatus;
+use ferrox_highs_sys::safe::HighsSolver;
 use std::collections::HashMap;
 use tracing::warn;
 
@@ -14,7 +14,7 @@ pub struct HighsMipSuggestor;
 
 #[async_trait]
 impl Suggestor for HighsMipSuggestor {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "HighsMipSuggestor"
     }
 
@@ -27,15 +27,19 @@ impl Suggestor for HighsMipSuggestor {
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {
-        ctx.get(ContextKey::Seeds).iter().any(|f| {
-            f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id))
-        })
+        ctx.get(ContextKey::Seeds)
+            .iter()
+            .any(|f| f.id.starts_with(REQUEST_PREFIX) && !plan_exists(ctx, request_id(&f.id)))
     }
 
     async fn execute(&self, ctx: &dyn Context) -> AgentEffect {
         let mut proposals = Vec::new();
 
-        for fact in ctx.get(ContextKey::Seeds).iter().filter(|f| f.id.starts_with(REQUEST_PREFIX)) {
+        for fact in ctx
+            .get(ContextKey::Seeds)
+            .iter()
+            .filter(|f| f.id.starts_with(REQUEST_PREFIX))
+        {
             let rid = request_id(&fact.id);
             if plan_exists(ctx, rid) {
                 continue;
@@ -45,9 +49,9 @@ impl Suggestor for HighsMipSuggestor {
                 Ok(req) => {
                     let plan = solve_mip(&req);
                     let confidence = match plan.status.as_str() {
-                        "optimal"  => 1.0,
+                        "optimal" => 1.0,
                         "feasible" => 0.6 + (1.0 - plan.mip_gap.min(1.0)) * 0.3,
-                        _          => 0.0,
+                        _ => 0.0,
                     };
                     proposals.push(
                         ProposedFact::new(
@@ -79,10 +83,12 @@ fn request_id(fact_id: &str) -> &str {
 
 fn plan_exists(ctx: &dyn Context, request_id: &str) -> bool {
     let plan_id = format!("{PLAN_PREFIX}{request_id}");
-    ctx.get(ContextKey::Strategies).iter().any(|f| f.id == plan_id)
+    ctx.get(ContextKey::Strategies)
+        .iter()
+        .any(|f| f.id == plan_id)
 }
 
-fn solve_mip(req: &MipRequest) -> MipPlan {
+pub fn solve_mip(req: &MipRequest) -> MipPlan {
     let mut solver = HighsSolver::new();
 
     // HiGHS cost sign: we pass costs directly; HiGHS minimizes by default.
@@ -91,7 +97,9 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
 
     // Build a cost vector indexed by variable position
     let mut costs = vec![0.0f64; req.variables.len()];
-    let name_to_pos: HashMap<&str, usize> = req.variables.iter()
+    let name_to_pos: HashMap<&str, usize> = req
+        .variables
+        .iter()
         .enumerate()
         .map(|(i, v)| (v.name.as_str(), i))
         .collect();
@@ -103,14 +111,16 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
     }
 
     // Add columns
-    let col_indices: Vec<usize> = req.variables.iter().enumerate().map(|(i, var)| {
-        let col = match var.kind {
+    let col_indices: Vec<i32> = req
+        .variables
+        .iter()
+        .enumerate()
+        .map(|(i, var)| match var.kind {
             VarKind::Continuous => solver.add_col(costs[i], var.lb, var.ub),
-            VarKind::Integer    => solver.add_int_col(costs[i], var.lb, var.ub),
-            VarKind::Binary     => solver.add_bin_col(costs[i]),
-        };
-        col
-    }).collect();
+            VarKind::Integer => solver.add_int_col(costs[i], var.lb, var.ub),
+            VarKind::Binary => solver.add_bin_col(costs[i]),
+        })
+        .collect();
 
     if let Some(tl) = req.time_limit_seconds {
         solver.set_time_limit(tl);
@@ -122,10 +132,10 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
     // Add rows
     for con in &req.constraints {
         let mut indices = Vec::new();
-        let mut vals    = Vec::new();
+        let mut vals = Vec::new();
         for term in &con.terms {
             if let Some(&pos) = name_to_pos.get(term.var.as_str()) {
-                indices.push(col_indices[pos] as i32);
+                indices.push(col_indices[pos]);
                 vals.push(term.coeff);
             }
         }
@@ -135,15 +145,18 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
     let status = solver.run();
 
     let status_str = match status {
-        HighsModelStatus::Optimal        => "optimal",
+        HighsModelStatus::Optimal => "optimal",
         HighsModelStatus::SolutionLimit | HighsModelStatus::TimeLimit => "feasible",
-        HighsModelStatus::Infeasible     => "infeasible",
-        HighsModelStatus::Unbounded      => "unbounded",
-        _                                => "error",
+        HighsModelStatus::Infeasible => "infeasible",
+        HighsModelStatus::Unbounded => "unbounded",
+        _ => "error",
     };
 
     let (values, objective_value, mip_gap) = if status.is_success() {
-        let vals: Vec<(String, f64)> = req.variables.iter().enumerate()
+        let vals: Vec<(String, f64)> = req
+            .variables
+            .iter()
+            .enumerate()
             .map(|(i, v)| (v.name.clone(), solver.col_value(col_indices[i])))
             .collect();
         let obj = solver.objective_value() * sign;
@@ -159,6 +172,6 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
         values,
         objective_value,
         mip_gap,
-        solver: "highs-v1.14.0",
+        solver: "highs-v1.14.0".to_string(),
     }
 }

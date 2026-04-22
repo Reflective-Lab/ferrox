@@ -1,0 +1,35 @@
+[package]
+name          = "ferrox-server"
+version.workspace    = true
+edition.workspace    = true
+rust-version.workspace = true
+license.workspace    = true
+repository.workspace = true
+description   = "gRPC server exposing ferrox solvers (CP-SAT, GLOP, HiGHS)"
+
+[[bin]]
+name = "ferrox-server"
+path = "src/main.rs"
+
+[features]
+default = ["full"]
+full    = ["dep:ferrox-ortools-sys", "dep:ferrox-highs-sys",
+           "ferrox/full", "ferrox-ortools-sys/link", "ferrox-highs-sys/link"]
+
+[dependencies]
+ferrox               = { workspace = true }
+ferrox-ortools-sys   = { workspace = true, optional = true }
+ferrox-highs-sys     = { workspace = true, optional = true }
+
+tonic                = { version = "0.12", features = ["tls"] }
+prost                = "0.13"
+tokio                = { workspace = true }
+tracing              = { workspace = true }
+tracing-subscriber   = { version = "0.3", features = ["env-filter"] }
+anyhow               = "1"
+
+[build-dependencies]
+tonic-build = "0.12"
+
+[lints]
+workspace = true

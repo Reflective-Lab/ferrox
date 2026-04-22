@@ -53,12 +53,59 @@ doc:
     cargo doc --no-deps --workspace --features ferrox/full --open
 
 # Run a named example (examples are standalone; build C++ deps first with `just deps`)
+# DYLD_LIBRARY_PATH is needed because rpath from build.rs doesn't propagate to standalone examples.
 example-cp:
-    cargo run --manifest-path examples/cp_sudoku/Cargo.toml --features ferrox/ortools
+    DYLD_LIBRARY_PATH="$(pwd)/vendor/ortools/build/lib:${DYLD_LIBRARY_PATH:-}" \
+        cargo run --manifest-path examples/cp_sudoku/Cargo.toml --features ferrox/ortools
 
 example-mip:
-    cargo run --manifest-path examples/highs_mip/Cargo.toml --features ferrox/highs
+    DYLD_LIBRARY_PATH="$(pwd)/vendor/highs/build/lib:${DYLD_LIBRARY_PATH:-}" \
+        cargo run --manifest-path examples/highs_mip/Cargo.toml --features ferrox/highs
+
+example-maatw:
+    DYLD_LIBRARY_PATH="$(pwd)/vendor/ortools/build/lib:${DYLD_LIBRARY_PATH:-}" \
+        cargo run --release --manifest-path examples/maatw/Cargo.toml
+
+example-jspbench:
+    DYLD_LIBRARY_PATH="$(pwd)/vendor/ortools/build/lib:${DYLD_LIBRARY_PATH:-}" \
+        cargo run --release --manifest-path examples/jspbench/Cargo.toml
+
+example-vrptw:
+    DYLD_LIBRARY_PATH="$(pwd)/vendor/ortools/build/lib:${DYLD_LIBRARY_PATH:-}" \
+        cargo run --release --manifest-path examples/vrptw/Cargo.toml
 
 # Benchmarks
 bench:
     cargo bench --workspace --features ferrox/full
+
+# ── gRPC server ───────────────────────────────────────────────────────────────
+
+# Run gRPC server locally (no TLS)
+server:
+    cargo run --package ferrox-server --features ferrox-server/full
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+
+# Build the Docker image (context = parent dir so converge/ is reachable)
+docker-build:
+    docker build -f Dockerfile -t ferrox-server:latest ..
+
+# Run the container with certs from ./tls
+docker-run:
+    docker run --rm -p 50051:50051 -v "$(pwd)/tls:/tls:ro" ferrox-server:latest
+
+# Bring up with docker compose
+up:
+    docker compose up --build
+
+# Tear down
+down:
+    docker compose down
+
+# Generate self-signed dev certs for localhost testing
+tls-dev-certs:
+    mkdir -p tls
+    openssl req -x509 -newkey rsa:4096 -keyout tls/server.key \
+      -out tls/server.crt -days 365 -nodes \
+      -subj "/CN=ferrox-server" \
+      -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"

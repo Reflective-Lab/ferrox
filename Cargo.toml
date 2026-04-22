@@ -4,6 +4,7 @@ members = [
     "crates/ortools-sys",
     "crates/highs-sys",
     "crates/ferrox",
+    "crates/ferrox-server",
 ]
 
 [workspace.package]

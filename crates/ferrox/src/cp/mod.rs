@@ -1,5 +1,8 @@
 pub mod problem;
 pub mod suggestor;
 
-pub use problem::{CpSatPlan, CpSatRequest, CpTerm, CpVariable, ConstraintKind};
-pub use suggestor::CpSatSuggestor;
+pub use problem::{
+    ConstraintKind, CpSatPlan, CpSatRequest, CpTerm, CpVariable,
+    IntervalVarDef, OptionalIntervalVarDef,
+};
+pub use suggestor::{CpSatSuggestor, solve_cp};
