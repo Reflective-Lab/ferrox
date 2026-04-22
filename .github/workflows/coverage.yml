@@ -1,0 +1,54 @@
+name: Coverage
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.94.0"
+  EXCLUDES: --exclude ferrox-server
+
+jobs:
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: Generate coverage
+        run: cargo llvm-cov --workspace ${{ env.EXCLUDES }} --lib --json --output-path coverage.json
+        continue-on-error: true
+      - name: Extract coverage percentage
+        id: cov
+        run: |
+          if [ -f coverage.json ]; then
+            COV=$(python3 -c "import json; d=json.load(open('coverage.json')); print(f\"{d['data'][0]['totals']['lines']['percent']:.1f}\")")
+            echo "percent=$COV" >> "$GITHUB_OUTPUT"
+            echo "### Coverage: ${COV}%" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "percent=0" >> "$GITHUB_OUTPUT"
+            echo "### Coverage: unknown" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: 92b9c8ad8b913f7f74bfa63cac838bbc
+          filename: ferrox-coverage.json
+          label: coverage
+          message: ${{ steps.cov.outputs.percent }}%
+          valColorRange: ${{ steps.cov.outputs.percent }}
+          minColorRange: 0
+          maxColorRange: 100

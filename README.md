@@ -6,7 +6,7 @@
 [![Crates.io](https://img.shields.io/crates/v/ferrox-solver.svg)](https://crates.io/crates/ferrox-solver)
 [![docs.rs](https://docs.rs/ferrox-solver/badge.svg)](https://docs.rs/ferrox-solver)
 [![dependency status](https://deps.rs/repo/github/Reflective-Lab/ferrox/status.svg)](https://deps.rs/repo/github/Reflective-Lab/ferrox)
-![MSRV](https://img.shields.io/badge/MSRV-1.85.0-blue)
+![MSRV](https://img.shields.io/badge/MSRV-1.94.0-blue)
 <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
