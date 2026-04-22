@@ -22,15 +22,16 @@ ferrox               = { workspace = true }
 ferrox-ortools-sys   = { workspace = true, optional = true }
 ferrox-highs-sys     = { workspace = true, optional = true }
 
-tonic                = { version = "0.12", features = ["tls"] }
-prost                = "0.13"
+tonic                = { version = "0.14", features = ["tls-ring"] }
+tonic-prost          = "0.14"
+prost                = "0.14"
 tokio                = { workspace = true }
 tracing              = { workspace = true }
-tracing-subscriber   = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber   = { version = "0.3.23", features = ["env-filter"] }
 anyhow               = "1"
 
 [build-dependencies]
-tonic-build = "0.12"
+tonic-prost-build = "0.14"
 
 [lints]
 workspace = true
