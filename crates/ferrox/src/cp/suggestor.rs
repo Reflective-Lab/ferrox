@@ -154,7 +154,7 @@ fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
         assignments,
         objective_value,
         wall_time_seconds: solution.wall_time(),
-        solver: "cp-sat-v9.11",
+        solver: "cp-sat-v9.15",
     }
 }
 

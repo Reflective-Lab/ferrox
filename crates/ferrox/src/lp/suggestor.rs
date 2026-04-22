@@ -135,6 +135,6 @@ fn solve_lp(req: &LpRequest) -> LpPlan {
         status: status.to_string(),
         values,
         objective_value,
-        solver: "glop-v9.11",
+        solver: "glop-v9.15",
     }
 }

@@ -42,7 +42,7 @@ impl Suggestor for CpSatFormationSuggestor {
     }
 
     fn complexity_hint(&self) -> Option<&'static str> {
-        Some("weighted bipartite assignment via CP-SAT; O(roles * catalog) variables")
+        Some("weighted bipartite assignment via CP-SAT v9.15; O(roles * catalog) variables")
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {

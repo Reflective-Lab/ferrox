@@ -159,6 +159,6 @@ fn solve_mip(req: &MipRequest) -> MipPlan {
         values,
         objective_value,
         mip_gap,
-        solver: "highs-v1.7.2",
+        solver: "highs-v1.14.0",
     }
 }

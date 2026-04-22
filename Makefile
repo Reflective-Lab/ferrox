@@ -1,5 +1,5 @@
-ORTOOLS_TAG   := v9.11
-HIGHS_TAG     := v1.7.2
+ORTOOLS_TAG   := v9.15
+HIGHS_TAG     := v1.14.0
 ORTOOLS_SRC   := vendor/ortools
 HIGHS_SRC     := vendor/highs
 ORTOOLS_BUILD := $(ORTOOLS_SRC)/build
