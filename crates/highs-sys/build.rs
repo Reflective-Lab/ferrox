@@ -3,11 +3,11 @@ fn main() {
     println!("cargo:rerun-if-changed=highs_wrapper.h");
     println!("cargo:rerun-if-changed=highs_wrapper.cc");
 
-    #[cfg(feature = "link")]
-    build_with_highs();
+    if std::env::var("CARGO_FEATURE_LINK").is_ok() {
+        build_with_highs();
+    }
 }
 
-#[cfg(feature = "link")]
 fn build_with_highs() {
     use std::{env, path::PathBuf};
 

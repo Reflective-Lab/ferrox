@@ -4,19 +4,12 @@ members = [
     "crates/ortools-sys",
     "crates/highs-sys",
     "crates/ferrox",
-    "examples/cp_sudoku",
-    "examples/highs_mip",
-]
-default-members = [
-    "crates/ortools-sys",
-    "crates/highs-sys",
-    "crates/ferrox",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.82.0"
+rust-version = "1.85.0"
 license = "MIT"
 repository = "https://github.com/Reflective-Lab/ferrox"
 publish = false

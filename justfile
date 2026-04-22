@@ -52,9 +52,12 @@ deps-clean:
 doc:
     cargo doc --no-deps --workspace --features ferrox/full --open
 
-# Run a named example
-example name:
-    cargo run --example {{name}} --features ferrox/full
+# Run a named example (examples are standalone; build C++ deps first with `just deps`)
+example-cp:
+    cargo run --manifest-path examples/cp_sudoku/Cargo.toml --features ferrox/ortools
+
+example-mip:
+    cargo run --manifest-path examples/highs_mip/Cargo.toml --features ferrox/highs
 
 # Benchmarks
 bench:

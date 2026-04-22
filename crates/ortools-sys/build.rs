@@ -3,16 +3,16 @@ fn main() {
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=wrapper.cc");
 
-    #[cfg(feature = "link")]
-    build_with_ortools();
+    if std::env::var("CARGO_FEATURE_LINK").is_ok() {
+        build_with_ortools();
+    }
 }
 
-#[cfg(feature = "link")]
 fn build_with_ortools() {
     use std::{env, path::PathBuf};
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let workspace_root = manifest_dir.parent().unwrap().parent().unwrap();
+    let workspace_root = manifest_dir.parent().unwrap().parent().unwrap().to_path_buf();
 
     // Allow override via FERROX_ORTOOLS_ROOT env var; default to vendor/ortools/build
     let ortools_build = env::var("FERROX_ORTOOLS_ROOT")

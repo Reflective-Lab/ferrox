@@ -1,15 +1,17 @@
+[workspace]
+
 [package]
 name = "cp-sudoku"
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2024"
 
 [[bin]]
 name = "cp_sudoku"
 path = "src/main.rs"
 
 [dependencies]
-ferrox     = { workspace = true, features = ["ortools"] }
-converge-core = { workspace = true }
-converge-pack = { workspace = true }
-serde_json    = { workspace = true }
-tokio         = { workspace = true }
+ferrox        = { path = "../../crates/ferrox" }
+converge-core = { path = "../../../../converge/crates/core", version = "3.7.1" }
+converge-pack = { path = "../../../../converge/crates/pack", version = "3.7.1" }
+serde_json    = "1"
+tokio         = { version = "1", features = ["macros", "rt-multi-thread"] }
