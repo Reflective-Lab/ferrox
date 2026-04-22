@@ -1,0 +1,35 @@
+[package]
+name = "ferrox"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Iron-forged OR-Tools and HiGHS solvers as Converge Suggestors"
+
+[features]
+default  = []
+ortools  = ["dep:ferrox-ortools-sys", "ferrox-ortools-sys/link"]
+highs    = ["dep:ferrox-highs-sys",   "ferrox-highs-sys/link"]
+full     = ["ortools", "highs"]
+
+[dependencies]
+ferrox-ortools-sys = { workspace = true, optional = true }
+ferrox-highs-sys   = { workspace = true, optional = true }
+
+converge-pack         = { workspace = true }
+converge-model        = { workspace = true }
+converge-provider-api = { workspace = true }
+
+async-trait = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+
+[dev-dependencies]
+converge-core = { workspace = true }
+tokio = { workspace = true }
+
+[lints]
+workspace = true

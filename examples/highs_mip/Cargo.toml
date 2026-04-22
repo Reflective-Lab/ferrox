@@ -1,0 +1,15 @@
+[package]
+name = "highs-mip"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "highs_mip"
+path = "src/main.rs"
+
+[dependencies]
+ferrox        = { workspace = true, features = ["highs"] }
+converge-core = { workspace = true }
+converge-pack = { workspace = true }
+serde_json    = { workspace = true }
+tokio         = { workspace = true }

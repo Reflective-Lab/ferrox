@@ -1,0 +1,15 @@
+[package]
+name = "cp-sudoku"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "cp_sudoku"
+path = "src/main.rs"
+
+[dependencies]
+ferrox     = { workspace = true, features = ["ortools"] }
+converge-core = { workspace = true }
+converge-pack = { workspace = true }
+serde_json    = { workspace = true }
+tokio         = { workspace = true }

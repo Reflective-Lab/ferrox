@@ -1,0 +1,53 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ortools-sys",
+    "crates/highs-sys",
+    "crates/ferrox",
+    "examples/cp_sudoku",
+    "examples/highs_mip",
+]
+default-members = [
+    "crates/ortools-sys",
+    "crates/highs-sys",
+    "crates/ferrox",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.82.0"
+license = "MIT"
+repository = "https://github.com/Reflective-Lab/ferrox"
+publish = false
+
+[workspace.dependencies]
+# ferrox-internal
+ferrox-ortools-sys = { path = "crates/ortools-sys", version = "0.1.0" }
+ferrox-highs-sys   = { path = "crates/highs-sys",   version = "0.1.0" }
+ferrox             = { path = "crates/ferrox",       version = "0.1.0" }
+
+# converge — path deps during development
+converge-pack  = { path = "../converge/crates/pack",         version = "3.7.1" }
+converge-model = { path = "../converge/crates/model",        version = "3.7.1" }
+converge-core  = { path = "../converge/crates/core",         version = "3.7.1" }
+converge-provider-api = { path = "../converge/crates/provider-api", version = "3.7.1" }
+
+# shared
+async-trait = "0.1"
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+thiserror   = "2"
+tracing     = "0.1"
+tokio       = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic    = { level = "warn", priority = -1 }
+# common exceptions
+must_use_candidate           = "allow"
+missing_errors_doc           = "allow"
+missing_panics_doc           = "allow"
+module_name_repetitions      = "allow"

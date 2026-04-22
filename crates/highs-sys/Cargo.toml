@@ -1,0 +1,25 @@
+[package]
+name = "ferrox-highs-sys"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "FFI bindings to the HiGHS MIP/LP solver"
+build = "build.rs"
+links = "highs"
+
+[features]
+default = []
+link = []
+
+[dependencies]
+
+[build-dependencies]
+cc = "1"
+
+[lints]
+workspace = true
+
+[lints.rust]
+unsafe_code = "allow"

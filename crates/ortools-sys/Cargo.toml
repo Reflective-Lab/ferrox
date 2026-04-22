@@ -1,0 +1,25 @@
+[package]
+name = "ferrox-ortools-sys"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "FFI bindings to Google OR-Tools CP-SAT and GLOP solvers"
+build = "build.rs"
+links = "ortools"
+
+[features]
+default = []
+link = []
+
+[dependencies]
+
+[build-dependencies]
+cc = "1"
+
+[lints]
+workspace = true
+
+[lints.rust]
+unsafe_code = "allow"
