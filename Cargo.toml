@@ -8,18 +8,17 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.3.12"
 edition = "2024"
 rust-version = "1.85.0"
 license = "MIT"
 repository = "https://github.com/Reflective-Lab/ferrox"
-publish = false
 
 [workspace.dependencies]
 # ferrox-internal
-ferrox-ortools-sys = { path = "crates/ortools-sys", version = "0.1.0" }
-ferrox-highs-sys   = { path = "crates/highs-sys",   version = "0.1.0" }
-ferrox             = { path = "crates/ferrox",       version = "0.1.0" }
+ferrox-ortools-sys = { path = "crates/ortools-sys", version = "0.3.12" }
+ferrox-highs-sys   = { path = "crates/highs-sys",   version = "0.3.12" }
+ferrox             = { path = "crates/ferrox",       version = "0.3.12" }
 
 # converge — path deps during development
 converge-pack  = { path = "../converge/crates/pack",         version = "3.7.1" }

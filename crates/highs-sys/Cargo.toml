@@ -6,6 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "FFI bindings to the HiGHS MIP/LP solver"
+keywords    = ["highs", "mip", "linear-programming", "optimization", "ffi"]
+categories  = ["external-ffi-bindings", "algorithms"]
 build = "build.rs"
 links = "highs"
 

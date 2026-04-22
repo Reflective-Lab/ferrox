@@ -6,6 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Iron-forged OR-Tools and HiGHS solvers as Converge Suggestors"
+keywords    = ["optimization", "solver", "scheduling", "routing", "constraint-programming"]
+categories  = ["algorithms", "science"]
 
 [features]
 default  = []

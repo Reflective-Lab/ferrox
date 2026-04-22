@@ -154,7 +154,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "converge-core"
-version = "3.7.1"
+version = "3.7.2"
 dependencies = [
  "async-trait",
  "converge-pack",
@@ -171,7 +171,7 @@ dependencies = [
 
 [[package]]
 name = "converge-model"
-version = "3.7.1"
+version = "3.7.2"
 dependencies = [
  "converge-core",
  "converge-pack",
@@ -181,7 +181,7 @@ dependencies = [
 
 [[package]]
 name = "converge-pack"
-version = "3.7.1"
+version = "3.7.2"
 dependencies = [
  "async-trait",
  "hex",
@@ -193,7 +193,7 @@ dependencies = [
 
 [[package]]
 name = "converge-provider-api"
-version = "3.7.1"
+version = "3.7.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -259,7 +259,7 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "ferrox"
-version = "0.1.0"
+version = "0.3.12"
 dependencies = [
  "async-trait",
  "converge-core",
@@ -277,21 +277,21 @@ dependencies = [
 
 [[package]]
 name = "ferrox-highs-sys"
-version = "0.1.0"
+version = "0.3.12"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "ferrox-ortools-sys"
-version = "0.1.0"
+version = "0.3.12"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "ferrox-server"
-version = "0.1.0"
+version = "0.3.12"
 dependencies = [
  "anyhow",
  "ferrox",
