@@ -132,12 +132,8 @@ pub fn solve_cpsat_vrptw(req: &VrptwRequest) -> VrptwPlan {
         ((dx * dx + dy * dy).sqrt() * SCALE as f64).ceil() as i64
     };
 
-    let depot_travel_to = |c: &Customer| -> i64 {
-        travel(req.depot.x, req.depot.y, c.x, c.y)
-    };
-    let customer_travel = |a: &Customer, b: &Customer| -> i64 {
-        travel(a.x, a.y, b.x, b.y)
-    };
+    let depot_travel_to = |c: &Customer| -> i64 { travel(req.depot.x, req.depot.y, c.x, c.y) };
+    let customer_travel = |a: &Customer, b: &Customer| -> i64 { travel(a.x, a.y, b.x, b.y) };
 
     let horizon = req.depot.due_time * SCALE;
     let big_m = horizon + 1;
@@ -292,14 +288,13 @@ pub fn solve_cpsat_vrptw(req: &VrptwRequest) -> VrptwPlan {
 
     for _ in 0..=n {
         // Find the arc leaving cur that is active.
-        let next = (0..num_nodes)
-            .find(|&j| {
-                if j == cur {
-                    return false;
-                }
-                let lit = arc_lit[cur][j];
-                lit != -1 && solution.value(lit) == 1
-            });
+        let next = (0..num_nodes).find(|&j| {
+            if j == cur {
+                return false;
+            }
+            let lit = arc_lit[cur][j];
+            lit != -1 && solution.value(lit) == 1
+        });
 
         match next {
             None | Some(0) => break, // returned to depot

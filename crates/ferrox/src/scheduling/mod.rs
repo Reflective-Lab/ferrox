@@ -37,10 +37,10 @@ pub mod greedy;
 #[cfg(feature = "ortools")]
 pub mod cpsat;
 
+pub use greedy::GreedySchedulerSuggestor;
 pub use problem::{
     SchedulingAgent, SchedulingPlan, SchedulingRequest, SchedulingTask, TaskAssignment,
 };
-pub use greedy::GreedySchedulerSuggestor;
 
 #[cfg(feature = "ortools")]
 pub use cpsat::CpSatSchedulerSuggestor;

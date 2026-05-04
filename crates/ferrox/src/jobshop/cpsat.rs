@@ -143,11 +143,7 @@ pub fn solve_cpsat_jsp(req: &JobShopRequest) -> JobShopPlan {
     // end[j][k] <= start[j][k+1]  →  start[j][k+1] - end[j][k] >= 0
     for (j, job) in req.jobs.iter().enumerate() {
         for k in 0..job.operations.len().saturating_sub(1) {
-            model.add_linear_ge(
-                &[starts[j][k + 1], ends[j][k]],
-                &[1, -1],
-                0,
-            );
+            model.add_linear_ge(&[starts[j][k + 1], ends[j][k]], &[1, -1], 0);
         }
     }
 
@@ -213,7 +209,11 @@ pub fn solve_cpsat_jsp(req: &JobShopRequest) -> JobShopPlan {
     }
     schedule.sort_by_key(|s| (s.machine_id, s.start));
 
-    let lower_bound = if status == "optimal" { Some(makespan) } else { None };
+    let lower_bound = if status == "optimal" {
+        Some(makespan)
+    } else {
+        None
+    };
 
     JobShopPlan {
         request_id: req.id.clone(),

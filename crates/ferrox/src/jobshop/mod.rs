@@ -30,14 +30,14 @@
 //! CP-SAT:      makespan 620   2.1 s   ← optimal  (26.3% improvement)
 //! ```
 
-pub mod problem;
 pub mod greedy;
+pub mod problem;
 
 #[cfg(feature = "ortools")]
 pub mod cpsat;
 
-pub use problem::{Job, JobShopPlan, JobShopRequest, Operation, ScheduledOp};
 pub use greedy::GreedyJobShopSuggestor;
+pub use problem::{Job, JobShopPlan, JobShopRequest, Operation, ScheduledOp};
 
 #[cfg(feature = "ortools")]
 pub use cpsat::CpSatJobShopSuggestor;

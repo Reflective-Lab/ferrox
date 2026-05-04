@@ -107,9 +107,10 @@ pub fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
     }
 
     for ivd in &req.interval_vars {
-        if let (Some(&s), Some(&e)) =
-            (name_to_idx.get(&ivd.start_var), name_to_idx.get(&ivd.end_var))
-        {
+        if let (Some(&s), Some(&e)) = (
+            name_to_idx.get(&ivd.start_var),
+            name_to_idx.get(&ivd.end_var),
+        ) {
             let idx = model.new_fixed_interval_var(s, ivd.duration, e, &ivd.name);
             interval_name_to_idx.insert(ivd.name.clone(), idx);
         } else {
@@ -124,8 +125,7 @@ pub fn solve_cp(req: &CpSatRequest) -> CpSatPlan {
             bool_name_to_idx.get(&ovd.lit_var),
         ) {
             (Some(&s), Some(&e), Some(&lit)) => {
-                let idx =
-                    model.new_optional_interval_var(s, ovd.duration, e, lit, &ovd.name);
+                let idx = model.new_optional_interval_var(s, ovd.duration, e, lit, &ovd.name);
                 interval_name_to_idx.insert(ovd.name.clone(), idx);
             }
             _ => {

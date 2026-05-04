@@ -33,9 +33,7 @@ impl Suggestor for GreedySchedulerSuggestor {
     }
 
     fn complexity_hint(&self) -> Option<&'static str> {
-        Some(
-            "O(n·m·log n) — EDF + earliest-available; deterministic, sub-ms for n ≤ 10 000 tasks",
-        )
+        Some("O(n·m·log n) — EDF + earliest-available; deterministic, sub-ms for n ≤ 10 000 tasks")
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {

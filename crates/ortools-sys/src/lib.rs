@@ -243,7 +243,13 @@ pub mod safe {
             }
         }
 
-        pub fn new_fixed_interval_var(&mut self, start: i32, size: i64, end: i32, name: &str) -> i32 {
+        pub fn new_fixed_interval_var(
+            &mut self,
+            start: i32,
+            size: i64,
+            end: i32,
+            name: &str,
+        ) -> i32 {
             let c = CString::new(name).unwrap();
             unsafe { cpmodel_new_interval_var(self.ptr.as_ptr(), start, size, end, c.as_ptr()) }
         }

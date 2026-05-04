@@ -175,10 +175,7 @@ pub fn solve_cpsat(req: &SchedulingRequest) -> SchedulingPlan {
     // 1. Each task assigned to at most one capable agent (optional scheduling).
     for names in &task_assign_names {
         if names.len() > 1 {
-            let vars: Vec<i32> = names
-                .iter()
-                .map(|n| name_to_idx[n])
-                .collect();
+            let vars: Vec<i32> = names.iter().map(|n| name_to_idx[n]).collect();
             let ones = vec![1i64; vars.len()];
             model.add_linear_le(&vars, &ones, 1);
         }

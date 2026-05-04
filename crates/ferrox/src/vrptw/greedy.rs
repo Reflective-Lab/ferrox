@@ -119,7 +119,8 @@ pub fn solve_nn(req: &VrptwRequest) -> VrptwPlan {
                 let depot_dx = c.x - req.depot.x;
                 let depot_dy = c.y - req.depot.y;
                 #[allow(clippy::cast_possible_truncation)]
-                let return_dist = ((depot_dx * depot_dx + depot_dy * depot_dy).sqrt().ceil()) as i64;
+                let return_dist =
+                    ((depot_dx * depot_dx + depot_dy * depot_dy).sqrt().ceil()) as i64;
                 if arrival <= c.window_close && depart + return_dist <= req.depot.due_time {
                     Some((i, dist, travel, arrival, depart))
                 } else {

@@ -35,14 +35,14 @@
 //! CP-SAT:              8 / 20 customers   4.9 s   ← optimal  (+60% throughput)
 //! ```
 
-pub mod problem;
 pub mod greedy;
+pub mod problem;
 
 #[cfg(feature = "ortools")]
 pub mod cpsat;
 
-pub use problem::{Customer, Depot, RouteStop, VrptwPlan, VrptwRequest};
 pub use greedy::NearestNeighborSuggestor;
+pub use problem::{Customer, Depot, RouteStop, VrptwPlan, VrptwRequest};
 
 #[cfg(feature = "ortools")]
 pub use cpsat::CpSatVrptwSuggestor;

@@ -33,7 +33,11 @@ fn default_time_limit() -> f64 {
 impl JobShopRequest {
     /// Trivial upper bound on makespan: sum of all operation durations.
     pub fn horizon(&self) -> i64 {
-        self.jobs.iter().flat_map(|j| j.operations.iter()).map(|o| o.duration).sum()
+        self.jobs
+            .iter()
+            .flat_map(|j| j.operations.iter())
+            .map(|o| o.duration)
+            .sum()
     }
 }
 

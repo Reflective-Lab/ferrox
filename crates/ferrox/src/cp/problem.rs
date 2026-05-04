@@ -42,12 +42,25 @@ pub struct CpTerm {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ConstraintKind {
-    LinearLe { terms: Vec<CpTerm>, rhs: i64 },
-    LinearGe { terms: Vec<CpTerm>, rhs: i64 },
-    LinearEq { terms: Vec<CpTerm>, rhs: i64 },
-    AllDifferent { vars: Vec<String> },
+    LinearLe {
+        terms: Vec<CpTerm>,
+        rhs: i64,
+    },
+    LinearGe {
+        terms: Vec<CpTerm>,
+        rhs: i64,
+    },
+    LinearEq {
+        terms: Vec<CpTerm>,
+        rhs: i64,
+    },
+    AllDifferent {
+        vars: Vec<String>,
+    },
     /// None of the listed interval variables may overlap in time.
-    NoOverlap { intervals: Vec<String> },
+    NoOverlap {
+        intervals: Vec<String>,
+    },
 }
 
 /// Seeded into `ContextKey::Seeds` with id prefix `"cpsat-request:"`.

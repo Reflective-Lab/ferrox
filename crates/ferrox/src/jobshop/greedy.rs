@@ -158,18 +158,22 @@ pub fn solve_greedy(req: &JobShopRequest) -> JobShopPlan {
 
         if !dispatched_any {
             // Advance time to the next machine-free event.
-            let next_t = machine_free.iter().copied().filter(|&t| {
-                // Only machines that still have pending ops.
-                (0..n).any(|j| {
-                    let k = next_op[j];
-                    k < req.jobs[j].operations.len()
-                        && req.jobs[j].operations[k].machine_id
-                            == machine_free
-                                .iter()
-                                .position(|&f| f == t)
-                                .unwrap_or(usize::MAX)
+            let next_t = machine_free
+                .iter()
+                .copied()
+                .filter(|&t| {
+                    // Only machines that still have pending ops.
+                    (0..n).any(|j| {
+                        let k = next_op[j];
+                        k < req.jobs[j].operations.len()
+                            && req.jobs[j].operations[k].machine_id
+                                == machine_free
+                                    .iter()
+                                    .position(|&f| f == t)
+                                    .unwrap_or(usize::MAX)
+                    })
                 })
-            }).min();
+                .min();
 
             if next_t.is_none() {
                 // Deadlock guard: just advance the global minimum.
