@@ -1,11 +1,9 @@
-# Used when build context is the parent directory (../)
-# These are the top-level entries under work/
-converge/target/
-ferrox/target/
-ferrox/vendor/
-ferrox/examples/*/target/
-ferrox/tests/
-ferrox/.git/
-ferrox/tls/
-**/.git/
+# Build context is the ferrox repo root.
+.git/
+.github/
+target/
+vendor/
+tls/
 **/target/
+**/.DS_Store
+*.md
