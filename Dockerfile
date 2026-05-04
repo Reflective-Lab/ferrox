@@ -57,11 +57,25 @@ ENV FERROX_ORTOOLS_ROOT=/opt/ortools/build
 ENV FERROX_HIGHS_ROOT=/opt/highs/build
 
 # HiGHS v1.14.0+ moved headers from src/ to highs/. The published
-# ferrox-highs-sys build.rs still includes <root>/src; bridge it with a symlink.
+# ferrox-highs-sys build.rs still includes <root>/src; bridge with a symlink.
 RUN [ -d /opt/highs/src ] || ln -s /opt/highs/highs /opt/highs/src
 
-RUN cargo build --release \
-      --package ferrox-server --features ferrox-server/full
+# OR-Tools BUILD_SHARED_LIBS=ON splits abseil into separate .so files. The
+# published ortools-sys build.rs only emits `-lortools`, so absl::log_internal
+# symbols pulled in via headers (e.g. ortools/util/bitset.h) are unresolved.
+# Discover every libabsl_*.so + protobuf companions in the OR-Tools build and
+# inject them via RUSTFLAGS at cargo time.
+RUN set -eux; \
+    cd /opt/ortools/build/lib; \
+    ABSL_FLAGS=$(ls libabsl_*.so 2>/dev/null \
+      | sed -E 's|^lib([^.]+)\.so$|-Clink-arg=-l\1|' | tr '\n' ' '); \
+    PROTOBUF_FLAGS=$(ls libprotobuf*.so libutf8_*.so libre2*.so 2>/dev/null \
+      | sed -E 's|^lib([^.]+)\.so$|-Clink-arg=-l\1|' | tr '\n' ' '); \
+    echo "RUSTFLAGS extras: $ABSL_FLAGS $PROTOBUF_FLAGS" > /tmp/rustflags.extras; \
+    cd /workspace; \
+    RUSTFLAGS="-Clink-arg=-Wl,--no-as-needed $ABSL_FLAGS $PROTOBUF_FLAGS" \
+      cargo build --release \
+        --package ferrox-server --features ferrox-server/full
 
 # ─── Stage 3: Minimal runtime ────────────────────────────────────────────────
 FROM debian:trixie-slim AS runtime
@@ -70,8 +84,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=cpp-builder /build/ortools/build/lib/libortools.so* /usr/local/lib/
-COPY --from=cpp-builder /build/highs/build/lib/libhighs.so*     /usr/local/lib/
+# Copy all shared libs OR-Tools produces (libortools.so + libabsl_*.so +
+# libprotobuf*.so + utf8_range, re2 …) so the binary can resolve them at
+# runtime. Same for HiGHS.
+COPY --from=cpp-builder /build/ortools/build/lib/*.so* /usr/local/lib/
+COPY --from=cpp-builder /build/highs/build/lib/*.so*   /usr/local/lib/
 
 RUN ldconfig
 
