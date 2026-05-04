@@ -64,16 +64,17 @@ RUN [ -d /opt/highs/src ] || ln -s /opt/highs/highs /opt/highs/src
 # published ortools-sys build.rs only emits `-lortools`, so absl::log_internal
 # symbols pulled in via headers (e.g. ortools/util/bitset.h) are unresolved.
 # Discover every libabsl_*.so + protobuf companions in the OR-Tools build and
-# inject them via RUSTFLAGS at cargo time.
+# expose them via RUSTFLAGS. -L is included so build scripts (which inherit
+# RUSTFLAGS) can resolve the lib names; ld's default --as-needed then skips
+# them in build-script binaries that don't reference the symbols.
 RUN set -eux; \
     cd /opt/ortools/build/lib; \
     ABSL_FLAGS=$(ls libabsl_*.so 2>/dev/null \
       | sed -E 's|^lib([^.]+)\.so$|-Clink-arg=-l\1|' | tr '\n' ' '); \
     PROTOBUF_FLAGS=$(ls libprotobuf*.so libutf8_*.so libre2*.so 2>/dev/null \
       | sed -E 's|^lib([^.]+)\.so$|-Clink-arg=-l\1|' | tr '\n' ' '); \
-    echo "RUSTFLAGS extras: $ABSL_FLAGS $PROTOBUF_FLAGS" > /tmp/rustflags.extras; \
     cd /workspace; \
-    RUSTFLAGS="-Clink-arg=-Wl,--no-as-needed $ABSL_FLAGS $PROTOBUF_FLAGS" \
+    RUSTFLAGS="-L /opt/ortools/build/lib $ABSL_FLAGS $PROTOBUF_FLAGS" \
       cargo build --release \
         --package ferrox-server --features ferrox-server/full
 
