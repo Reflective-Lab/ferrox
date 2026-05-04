@@ -56,6 +56,10 @@ RUN sed -i -E 's|path = "\.\./converge/[^"]*",[[:space:]]*||g' /workspace/Cargo.
 ENV FERROX_ORTOOLS_ROOT=/opt/ortools/build
 ENV FERROX_HIGHS_ROOT=/opt/highs/build
 
+RUN echo "=== /opt/highs (top) ===" && ls /opt/highs/ | head -20 && \
+    echo "=== /opt/highs/src ===" && ls /opt/highs/src/ 2>&1 | head -20 && \
+    echo "=== Highs.h locations ===" && find /opt/highs -name "Highs.h" 2>/dev/null | head -5
+
 RUN cargo build --release \
       --package ferrox-server --features ferrox-server/full
 
