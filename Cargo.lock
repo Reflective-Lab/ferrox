@@ -227,21 +227,21 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "ferrox-highs-sys"
-version = "0.3.12"
+version = "0.4.1"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "ferrox-ortools-sys"
-version = "0.3.12"
+version = "0.4.1"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "ferrox-server"
-version = "0.3.12"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "ferrox-highs-sys",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "ferrox-solver"
-version = "0.3.12"
+version = "0.4.1"
 dependencies = [
  "async-trait",
  "converge-core",
