@@ -1,5 +1,5 @@
 # ─── Stage 1: Build C++ libraries ────────────────────────────────────────────
-FROM debian:bookworm-slim AS cpp-builder
+FROM debian:trixie-slim AS cpp-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake git ca-certificates python3 \
@@ -32,7 +32,7 @@ RUN git clone --depth 1 --branch ${HIGHS_TAG} \
     cmake --build /build/highs-build -j"$(nproc)"
 
 # ─── Stage 2: Compile Rust server ────────────────────────────────────────────
-FROM rust:1.94-bookworm AS rust-builder
+FROM rust:1.94-trixie AS rust-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake clang libclang-dev protobuf-compiler \
@@ -59,7 +59,7 @@ RUN cargo build --release \
       --package ferrox-server --features ferrox-server/full
 
 # ─── Stage 3: Minimal runtime ────────────────────────────────────────────────
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 ca-certificates \
