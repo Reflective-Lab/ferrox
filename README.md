@@ -23,6 +23,43 @@ Ferrox finds the provably correct answer within it.
 
 ---
 
+## Repository Guide
+
+Ferrox is a Converge extension. Converge owns the shared suggestor contract and
+promotion authority; Ferrox owns solver models, native solver bindings,
+confidence semantics, and solver-backed suggestors.
+
+### Layout
+
+```text
+crates/ferrox/        Solver library and Converge suggestors
+crates/ferrox-server/ gRPC service wrapper
+crates/ortools-sys/   OR-Tools native binding wrapper
+crates/highs-sys/     HiGHS native binding wrapper
+examples/             Standalone examples
+```
+
+### Development
+
+```sh
+just check       # default, OR-Tools, HiGHS, and full feature checks
+just test        # pure Rust tests
+just test-full   # native solver tests, requires native deps
+just lint        # fmt-check plus clippy
+just deps        # build native solver dependencies
+just doc         # generate docs
+```
+
+Project docs:
+
+- [AGENTS.md](AGENTS.md) - agent entrypoint and boundary rules.
+- [CHANGELOG.md](CHANGELOG.md) - release notes.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - contribution guide.
+- [SECURITY.md](SECURITY.md) - vulnerability reporting and operator notes.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - community expectations.
+
+---
+
 ## The Problem LLMs Cannot Solve Alone
 
 Most real business decisions are constrained optimisation problems dressed in plain language:

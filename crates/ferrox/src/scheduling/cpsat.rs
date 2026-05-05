@@ -50,9 +50,9 @@ impl Suggestor for CpSatSchedulerSuggestor {
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {
-        ctx.get(ContextKey::Seeds)
-            .iter()
-            .any(|f| f.id.starts_with(REQUEST_PREFIX) && !own_plan_exists(ctx, request_id(&f.id)))
+        ctx.get(ContextKey::Seeds).iter().any(|f| {
+            f.id().starts_with(REQUEST_PREFIX) && !own_plan_exists(ctx, request_id(f.id()))
+        })
     }
 
     async fn execute(&self, ctx: &dyn Context) -> AgentEffect {
@@ -61,14 +61,14 @@ impl Suggestor for CpSatSchedulerSuggestor {
         for fact in ctx
             .get(ContextKey::Seeds)
             .iter()
-            .filter(|f| f.id.starts_with(REQUEST_PREFIX))
+            .filter(|f| f.id().starts_with(REQUEST_PREFIX))
         {
-            let rid = request_id(&fact.id);
+            let rid = request_id(fact.id());
             if own_plan_exists(ctx, rid) {
                 continue;
             }
 
-            match serde_json::from_str::<SchedulingRequest>(&fact.content) {
+            match serde_json::from_str::<SchedulingRequest>(fact.content()) {
                 Ok(req) => {
                     let plan = solve_cpsat(&req);
                     let confidence = match plan.status.as_str() {
@@ -87,7 +87,7 @@ impl Suggestor for CpSatSchedulerSuggestor {
                     );
                 }
                 Err(e) => {
-                    warn!(id = %fact.id, error = %e, "malformed scheduling-request");
+                    warn!(id = %fact.id(), error = %e, "malformed scheduling-request");
                 }
             }
         }
@@ -108,7 +108,7 @@ fn own_plan_exists(ctx: &dyn Context, request_id: &str) -> bool {
     let plan_id = format!("{PLAN_PREFIX}{request_id}");
     ctx.get(ContextKey::Strategies)
         .iter()
-        .any(|f| f.id == plan_id)
+        .any(|f| f.id() == plan_id.as_str())
 }
 
 // ── Solver ────────────────────────────────────────────────────────────────────

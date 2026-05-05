@@ -36,9 +36,9 @@ impl Suggestor for GreedyJobShopSuggestor {
     }
 
     fn accepts(&self, ctx: &dyn Context) -> bool {
-        ctx.get(ContextKey::Seeds)
-            .iter()
-            .any(|f| f.id.starts_with(REQUEST_PREFIX) && !own_plan_exists(ctx, request_id(&f.id)))
+        ctx.get(ContextKey::Seeds).iter().any(|f| {
+            f.id().starts_with(REQUEST_PREFIX) && !own_plan_exists(ctx, request_id(f.id()))
+        })
     }
 
     async fn execute(&self, ctx: &dyn Context) -> AgentEffect {
@@ -47,14 +47,14 @@ impl Suggestor for GreedyJobShopSuggestor {
         for fact in ctx
             .get(ContextKey::Seeds)
             .iter()
-            .filter(|f| f.id.starts_with(REQUEST_PREFIX))
+            .filter(|f| f.id().starts_with(REQUEST_PREFIX))
         {
-            let rid = request_id(&fact.id);
+            let rid = request_id(fact.id());
             if own_plan_exists(ctx, rid) {
                 continue;
             }
 
-            match serde_json::from_str::<JobShopRequest>(&fact.content) {
+            match serde_json::from_str::<JobShopRequest>(fact.content()) {
                 Ok(req) => {
                     let plan = solve_greedy(&req);
                     // SPT dispatching: bounded confidence.
@@ -70,7 +70,7 @@ impl Suggestor for GreedyJobShopSuggestor {
                     );
                 }
                 Err(e) => {
-                    warn!(id = %fact.id, error = %e, "malformed jspbench-request");
+                    warn!(id = %fact.id(), error = %e, "malformed jspbench-request");
                 }
             }
         }
@@ -91,7 +91,7 @@ fn own_plan_exists(ctx: &dyn Context, request_id: &str) -> bool {
     let plan_id = format!("{PLAN_PREFIX}{request_id}");
     ctx.get(ContextKey::Strategies)
         .iter()
-        .any(|f| f.id == plan_id)
+        .any(|f| f.id() == plan_id.as_str())
 }
 
 /// SPT list scheduling: repeatedly dispatch the shortest ready operation per machine.
